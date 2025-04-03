@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Kinect WebSocket Client</title>
+    <style>
+      #hand {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background-color: red;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+      }
+      #container {
+        position: relative;
+        width: 800px;
+        height: 600px;
+        border: 1px solid black;
+        background-color: #f0f0f0;
+      }
+      #status {
+        margin-top: 20px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Kinect Hand Tracking</h1>
+    <div id="container">
+      <div id="hand"></div>
+    </div>
+    <div id="status">Connecting...</div>
+
+    <script>
+      const ws = new WebSocket("ws://172.20.10.13:8080");
+      const handElement = document.getElementById("hand");
+      const containerElement = document.getElementById("container");
+      const statusElement = document.getElementById("status");
+      const containerWidth = containerElement.clientWidth;
+      const containerHeight = containerElement.clientHeight;
+
+      ws.onopen = () => {
+        statusElement.textContent = "Connected to Kinect";
+        statusElement.style.color = "green";
+      };
+
+      ws.onclose = () => {
+        statusElement.textContent = "Disconnected from Kinect";
+        statusElement.style.color = "red";
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        handElement.style.left = `${data.rightHand.x * containerWidth}px`;
+        handElement.style.top = `${data.rightHand.y * containerHeight}px`;
+
+        console.log(`X: ${data.rightHand.x * containerWidth}px Y: ${data.rightHand.y * containerHeight}px`);
+
+        handElement.style.backgroundColor = data.rightHand.isClosed ? "blue" : "red";
+
+        // Display swipe gestures
+        let statusText = "Connected to Kinect";
+        if (data.slideState === "previous") {
+          statusText += "Previous Slide";
+        }
+        if (data.slideState === "next") {
+          statusText += "Next Slide";
+        }
+        statusElement.textContent = statusText;
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket Error:", error);
+        statusElement.textContent = "Error connecting to Kinect";
+        statusElement.style.color = "red";
+      };
+    </script>
+  </body>
+</html>
